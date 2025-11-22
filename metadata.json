@@ -1,0 +1,5 @@
+{
+  "name": "Mudrex Community Mod Bot Studio",
+  "description": "A logic studio for a Telegram Community Mod Bot. Simulates a group chat environment where the bot autonomously decides when to intervene based on context, sentiment, and company knowledge.",
+  "requestFramePermissions": []
+}
