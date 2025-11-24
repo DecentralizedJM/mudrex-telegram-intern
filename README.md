@@ -1,58 +1,180 @@
-# 🤖 Mudrex Community Intern Bot
+# Mudrex Telegram Intern Bot 🤖
 
-**Repository:** [mudrex-tg-intern](https://github.com/DecentralizedJM/mudrex-tg-intern)
+AI-powered Telegram community assistant for Mudrex using **Gemini 2.0 Flash Thinking Experimental (Dec 2024)**.
 
-A sophisticated **Telegram Community Moderator Bot** simulation designed to act as the "Ideal Intern" for the Mudrex community. This project provides a Logic Studio to visualize, configure, and test the bot's autonomous decision-making engine.
+## 🚀 Features
 
-## 🌟 Features
+✅ **Ultra-Smart Spam Prevention** - Only responds when genuinely needed  
+✅ **Scam Detection** - Automatically flags P2P/USDT sellers and tags admins  
+✅ **Market Analysis** - Uses Google Search for real-time crypto news  
+✅ **Emotional Support** - Empathetic responses during market downturns  
+✅ **Rate Limited** - Maximum 50 responses per day (resets daily)  
+✅ **Anti-Hallucination** - Tight logic to avoid making up information  
 
-### 🧠 Intelligent Decision Engine (Gemini 3 Pro)
-The bot doesn't just reply to everything. It evaluates:
-*   **Sentiment:** Is the user angry? Happy? Trolling?
-*   **Context:** Has it already replied recently? (Rate limiting)
-*   **Safety:** Detects scams, P2P spam, and abusive language.
-*   **Knowledge:** Uses Google Search to provide real-time market updates.
+## 📊 Intelligence System
 
-### 🎭 Adaptive Persona
-*   **Smart Sarcasm:** De-escalates angry users with wit ("Calm down bro, caps lock won't speed up the blockchain").
-*   **Hinglish Support:** Prioritizes English but switches to Hindi/Hinglish naturally when context demands.
-*   **Anti-Scam Protocols:** Automatically detects P2P/Signal group spammers, mocks them, and tags admins (`@DecentralizedJM`, `@babaearn23`).
+The bot has a **7-tier decision framework**:
 
-### 🛠 Traffic Simulator
-Test the bot's logic in real-time without connecting to Telegram:
-*   **💬 Question Mode:** Simulates standard FAQ queries.
-*   **⚡ Chatter Mode:** Simulates random community noise ("GM", "WAGMI").
-*   **😡 Angry Mode:** Simulates FUD and caps-lock rage.
-*   **☠️ Scam Mode:** Simulates P2P/Signal spam attacks.
+1. **SCAM DETECTION** (Critical) - P2P, USDT sellers, VIP signals → Hostile intervention
+2. **FINANCIAL ADVICE** - Politely declines + "...but buy BIT anytime 😏"
+3. **MARKET ANALYSIS** - Uses Google Search for latest news
+4. **EMOTIONAL SUPPORT** - Empathy for panicked traders
+5. **DIRECT QUESTIONS** - Answers Mudrex-related queries
+6. **UNKNOWN CONTEXT** - Ignores vague/random messages
+7. **SUPPORT ROUTING** - Directs to help@mudrex.com
 
-## 🚀 Tech Stack
-*   **Frontend:** React (TypeScript), Tailwind CSS
-*   **AI Logic:** Google Gemini 3 Pro Preview
-*   **State Management:** React Hooks
+## 🛠️ Setup
 
-## 📂 Project Structure
-*   `services/geminiService.ts`: The "Brain" of the bot. Contains the system prompts and JSON schema for decision making.
-*   `components/ChatInterface.tsx`: The UI that simulates a Telegram group chat.
-*   `components/ConfigPanel.tsx`: Configuration drawer to tweak the bot's personality and knowledge base.
+### 1. Prerequisites
 
-## 📝 Local Setup
+- Node.js 18+
+- Telegram Bot Token (from [@BotFather](https://t.me/botfather))
+- Gemini API Key (from [AI Studio](https://aistudio.google.com/app/apikey))
 
-1.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+### 2. Installation
 
-2.  **Set up API Key:**
-    Rename the example file and add your key:
-    ```bash
-    cp .env.example .env
-    ```
-    *Edit `.env` and paste your Google Gemini API Key.*
+```bash
+npm install
+```
 
-3.  **Run the simulator:**
-    ```bash
-    npm run dev
-    ```
+### 3. Configuration
+
+Create `.env` file:
+
+```env
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### 4. Run the Bot
+
+```bash
+npm run bot
+```
+
+Or build and run production:
+
+```bash
+npm run build
+npm start
+```
+
+## 📋 Bot Commands
+
+- `/stats` - View daily response statistics
+- `/help` - Show help message
+
+## 🎯 How It Works
+
+```
+Telegram Message
+    ↓
+Pre-Filter (Spam Detection)
+    ↓
+Check Rate Limit (50/day)
+    ↓
+Critical Keyword Check (Scams)
+    ↓
+Direct Engagement Check (Questions)
+    ↓
+Gemini AI Analysis
+    ↓
+Decision: Reply or Ignore
+```
+
+## 🧠 Anti-Spam Intelligence
+
+The bot **ignores**:
+- Short messages (1-3 characters)
+- Generic responses ("lol", "ok", "nice")
+- Only emojis
+- Casual greetings
+- Random chatter
+
+The bot **responds to**:
+- Scam keywords (always)
+- Direct questions about Mudrex
+- Market analysis requests
+- Emotional distress signals
+- Support queries
+
+## ⚙️ Configuration
+
+Edit `bot/index.ts` to customize:
+
+```typescript
+const config = {
+  botName: "Mudrex Intern",
+  companyName: "Mudrex",
+  sarcasmLevel: "medium",
+  knowledgeBase: DEFAULT_KNOWLEDGE_BASE,
+  personaInstructions: DEFAULT_PERSONA,
+};
+```
+
+Adjust rate limit in `services/geminiService.ts`:
+
+```typescript
+const DAILY_RESPONSE_LIMIT = 50; // Change this
+```
+
+## 📊 Tech Stack
+
+- **Runtime**: Node.js with TypeScript
+- **AI Model**: Gemini 2.0 Flash Thinking Experimental (Dec 2024)
+- **Bot Framework**: node-telegram-bot-api
+- **Temperature**: 0.2 (precise, low hallucination)
+- **Max Tokens**: 500 (concise responses)
+
+## 🔒 Security
+
+- Never gives financial advice
+- Doesn't store sensitive data
+- Rate-limited to prevent abuse
+- Environment variables for secrets
+
+## 📈 Monitoring
+
+Check bot stats in real-time:
+
+```bash
+# In Telegram chat
+/stats
+```
+
+Console logs show:
+- Every message received
+- Filter decisions
+- Response count
+- Reasoning for each action
+
+## 🚀 Deployment
+
+### Railway / Heroku / Render
+
+1. Push to GitHub
+2. Connect repo to hosting service
+3. Add environment variables
+4. Deploy!
+
+### PM2 (VPS)
+
+```bash
+npm install -g pm2
+npm run build
+pm2 start dist/bot/index.js --name mudrex-bot
+pm2 save
+pm2 startup
+```
+
+## 👨‍💻 Author
+
+Created by **@DecentralizedJM**
+
+## 📄 License
+
+MIT
 
 ---
-*Built for the Mudrex Community*
+
+**Note**: This bot is designed for the Mudrex community. Modify `types.ts` and `bot/index.ts` to adapt for other use cases.

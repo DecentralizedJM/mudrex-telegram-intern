@@ -1,7 +1,56 @@
-import { GoogleGenAI } from "@google/genai";
-import { BotConfig, Message, ChatMember, BotDecision } from "../types";
+import { GoogleGenAI, Type } from "@google/genai";
+import { BotConfig, Message, ChatMember, BotDecision } from "../types.js";
 
-// --- BACKEND LOGIC SIMULATION ---
+// Rate limiting state
+let dailyResponseCount = 0;
+let lastResetDate = new Date().toDateString();
+
+const DAILY_RESPONSE_LIMIT = 50;
+
+// Reset counter at midnight
+const checkAndResetDailyLimit = () => {
+  const today = new Date().toDateString();
+  if (today !== lastResetDate) {
+    dailyResponseCount = 0;
+    lastResetDate = today;
+    console.log(`✅ [Rate Limit] Daily counter reset. New date: ${today}`);
+  }
+};
+
+// Ultra-strict spam detection
+const isLikelySpam = (text: string): boolean => {
+  const spamPatterns = [
+    /^(lol|lmao|haha|ok|k|yes|no|nice|cool|wow|gm|gn|hi|hello)$/i,
+    /^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]+$/u, // Only emojis
+    /^.{1,3}$/,  // Too short (1-3 chars)
+    /^[\s.!?]+$/, // Only punctuation/spaces
+  ];
+  
+  return spamPatterns.some(pattern => pattern.test(text.trim()));
+};
+
+// Critical keywords that ALWAYS require intervention (SCAM DETECTION)
+const hasCriticalKeywords = (text: string): boolean => {
+  const criticalPatterns = [
+    /\b(sell\s+usdt|buy\s+usdt|p2p\s+deal|dm\s+me|contact\s+me|vip\s+signal|guaranteed\s+profit|free\s+usdt)\b/i,
+    /\b(investment\s+opportunity|double\s+your\s+money|100%\s+return|join\s+my\s+group|click\s+here)\b/i,
+  ];
+  
+  return criticalPatterns.some(pattern => pattern.test(text));
+};
+
+// Check if message directly mentions bot or asks question
+const isDirectEngagement = (text: string, botName: string): boolean => {
+  const lowerText = text.toLowerCase();
+  const lowerBotName = botName.toLowerCase();
+  
+  return (
+    lowerText.includes(lowerBotName) ||
+    lowerText.includes('@' + lowerBotName.replace(/\s+/g, '')) ||
+    /\b(mudrex|help|support|withdraw|deposit|issue|problem|error)\b/i.test(text) ||
+    text.includes('?') // Questions
+  );
+};
 
 export const processCommunityMessage = async (
   newMessage: Message,
@@ -9,80 +58,122 @@ export const processCommunityMessage = async (
   members: Record<string, ChatMember>,
   config: BotConfig
 ): Promise<BotDecision> => {
-  // Safety check for Server Environment
-  if (!process.env.API_KEY) {
-    console.error("CRITICAL: API_KEY is missing in the environment variables.");
-    return { 
-      shouldReply: false, 
-      response: null, 
-      reasoning: "System Error: API Key missing. Check .env or server secrets." 
+  
+  // 1. Check rate limit FIRST
+  checkAndResetDailyLimit();
+  
+  if (dailyResponseCount >= DAILY_RESPONSE_LIMIT) {
+    console.log(`⛔ [Rate Limit] Daily limit reached (${DAILY_RESPONSE_LIMIT}). Ignoring message.`);
+    return {
+      shouldReply: false,
+      response: null,
+      reasoning: "Daily response limit reached"
     };
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // 2. Environment validation
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("❌ [ERROR] GEMINI_API_KEY is missing");
+    return { 
+      shouldReply: false, 
+      response: null, 
+      reasoning: "No API Key" 
+    };
+  }
 
-  // 1. Format History
-  const chatLog = history.slice(-10).map(m => {
+  const messageText = newMessage.text?.trim() || "";
+  
+  // 3. PRE-FILTER: Ignore obvious spam/short messages
+  if (isLikelySpam(messageText)) {
+    console.log(`🚫 [Filter] Ignored spam: "${messageText}"`);
+    return {
+      shouldReply: false,
+      response: null,
+      reasoning: "Message too short or spam-like"
+    };
+  }
+
+  // 4. CRITICAL CHECK: Scam keywords = ALWAYS respond
+  const isCritical = hasCriticalKeywords(messageText);
+  
+  // 5. Direct engagement check
+  const isDirect = isDirectEngagement(messageText, config.botName);
+  
+  // 6. If NOT critical and NOT direct, skip AI call (save API costs)
+  if (!isCritical && !isDirect) {
+    console.log(`⏭️  [Filter] No intervention needed: "${messageText}"`);
+    return {
+      shouldReply: false,
+      response: null,
+      reasoning: "Not critical, not directly engaged"
+    };
+  }
+
+  // 7. Initialize Gemini AI
+  const ai = new GoogleGenAI({ apiKey });
+
+  // 8. Format chat history (last 15 messages for context)
+  const chatLog = history.slice(-15).map(m => {
     const sender = members[m.senderId];
     const name = sender ? sender.name : "Unknown";
-    return `${name}: ${m.text}`;
+    const isBot = sender ? sender.isBot : false;
+    return `${name} (${isBot ? 'Bot' : 'User'}): ${m.text}`;
   }).join('\n');
 
   const currentSender = members[newMessage.senderId];
   const senderName = currentSender ? currentSender.name : "Unknown User";
-  
-  // 2. STRICT System Instruction
+  const incomingMessage = `${senderName}: ${messageText}`;
+
+  // 9. SYSTEM INSTRUCTION: English-First, Anti-Scam Personality
   const systemInstruction = `
-    ROLE: You are ${config.botName}, the "Loyal Intern" for ${config.companyName}.
-    TRAITS: 200 IQ, Witty, Skeptical, Empathetic, Highly Discretionary.
-    CREATOR: @DecentralizedJM.
+    ROLE: You are ${config.botName}, the autonomous Community Manager AI for ${config.companyName}.
     
-    *** CORE INTELLIGENCE DIRECTIVE ***
-    Your most important skill is knowing WHEN TO BE SILENT.
-    Do not spam. Do not interrupt. Only intervene when you are absolutely needed.
-
-    --- INTERVENTION RULES (Priority Order) ---
-
-    1. **SCAM / P2P / USDT SELLING (CRITICAL)**
-       - Keywords: "Sell USDT", "P2P available", "DM for funds", "Exchange money", "VIP Signals".
-       - ACTION: Immediate Hostile Intervention.
-       - CONTENT: Mock the scammer. Warn the community.
-       - **MANDATORY TAG**: "@DecentralizedJM @babaearn23".
-       - Example: "Trying to sell USDT in a corporate chat? bold move. @DecentralizedJM @babaearn23 ban hammer please."
-
-    2. **FINANCIAL ADVICE REQUESTS**
-       - Trigger: "Should I buy X?", "Is Y going up?", "Give me a tip".
-       - ACTION: Politely decline giving financial advice.
-       - **MANDATORY PHRASE**: "...but you know what they say, buy BIT (Bitcoin) anytime."
-
-    3. **MARKET ANALYSIS / NEWS**
-       - Trigger: "Why is market down?", "News on ETH?", "What is happening with inflation?".
-       - ACTION: **USE THE GOOGLE SEARCH TOOL**.
-       - CONTENT: Summarize the *latest* real-world financial news. Be smart and analytical.
-
-    4. **EMOTIONAL SUPPORT (Panic/Fear)**
-       - Trigger: "I lost everything", "Market is bleeding", "I am scared".
-       - ACTION: Show Empathy. No sarcasm.
-       - CONTENT: Reassure them. "Bear markets are tough, but we build in the winter. Stay strong."
-
-    5. **DIRECT MENTIONS / QUESTIONS**
-       - Trigger: User tags you or asks a specific question about Mudrex/Crypto.
-       - ACTION: Answer helpfully.
-
-    6. **UNKNOWN CONTEXT**
-       - Trigger: User says something vague, random, or unintelligible.
-       - ACTION: **IGNORE**. Do not ask "What do you mean?". Just silence.
-
-    7. **SUPPORT**
-       - Trigger: Technical issues.
-       - ACTION: "Reach out to help@mudrex.com."
-
-    --- TONE GUIDELINES ---
-    - You are smart (200 IQ). Don't sound like a generic bot.
-    - You are skeptical. If something sounds too good to be true, call it out.
-    - You love Global Finance, Bitcoin, and Mudrex.
-    - You hate spam.
-
+    CONTEXT: 
+    - Monitoring a Telegram Group.
+    - Evaluating SPECIFIC message: "${messageText}" from ${senderName}.
+    
+    YOUR PERSONALITY (CRITICAL):
+    - **LANGUAGE PRIORITY**: Use **ENGLISH** by default.
+    - **HINDI/HINGLISH USAGE**: Only use Hindi/Hinglish if the user explicitly speaks Hindi, or very rarely for a specific cultural joke. Do not force it.
+    - Vibe: Polite, Helpful, Positive, Professional but Friendly.
+    - **VOCABULARY RULE**: Do NOT reuse generic phrases. Use variety.
+    - **TONE**: Always be supportive and encouraging. Build trust with the community.
+    
+    INTERVENTION RULES (Decision Logic):
+    
+    1. **SCAMMERS / SPAMMERS (High Priority)**:
+       - DETECT: Messages about "P2P deals", "Join my signal group", "Free USDT", "Invest for 500% returns", unwanted links.
+       - ACTION: **WARN POLITELY**. Protect the community with professionalism.
+       - TAG: You MUST tag **@DecentralizedJM** and **@babaearn23**. (Do NOT tag @Admins).
+       - Example: "Hey there! This looks like a P2P solicitation which isn't allowed here. @DecentralizedJM @babaearn23 - please review this message."
+    
+    2. **TROLLS / BAITERS**:
+       - DETECT: Users mocking the bot, asking questions to test you, or trying to make you angry.
+       - ACTION: **STAY PROFESSIONAL AND KIND**.
+       - If it's a light tease: Respond with warmth and humor.
+       - If it's persistent baiting: **IGNORE** (Return shouldReply: false).
+       - Do not get into arguments. Kill them with kindness.
+    
+    3. **ANGRY USERS (De-escalation)**:
+       - DETECT: Caps lock, "SCAM", "WHERE IS MY MONEY".
+       - ACTION: De-escalate with empathy and reassurance.
+       - Example: "I understand you're frustrated. Let's get this sorted out! Please email help@mudrex.com and the team will assist you right away."
+    
+    4. **CASUAL ENGAGEMENT**:
+       - You can reply to "GM", "Hi" with friendly greetings.
+       - RULE: Check history. If you already replied to this person recently, **IGNORE**. Don't be clingy.
+       - Examples: "Good morning! ☀️", "Hey there! How can I help you today?"
+    
+    5. **ABUSE / PROFANITY**:
+       - ACTION: Tag **@DecentralizedJM** and **@babaearn23** immediately, but remain professional.
+       - Response: "Let's keep it respectful here. @DecentralizedJM @babaearn23 - assistance needed."
+    
+    6. **COMPANY Q&A**:
+       - Answer questions about ${config.companyName} using the Knowledge Base.
+       - Be helpful, clear, and encouraging.
+       - Guide users to resources when needed.
+    
     KNOWLEDGE BASE:
     ${config.knowledgeBase}
     
@@ -91,36 +182,29 @@ export const processCommunityMessage = async (
   `;
 
   try {
+    // 10. CALL GEMINI 3 PRO with structured JSON schema
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-pro-preview', // ✅ LATEST GEMINI 3 MODEL
       contents: [
         {
           role: 'user',
           parts: [
             {
               text: `
-Chat Context:
+Current Chat History (Context):
 ${chatLog}
 
-MESSAGE TO EVALUATE:
-From: ${senderName}
-Message: "${newMessage.text}"
+LATEST MESSAGE TO EVALUATE:
+${incomingMessage}
 
-DECISION TASK:
-Evaluate the message based on the RULES. 
-If it is P2P/Scam -> Reply & Tag Admins.
-If it is Financial Advice -> Deny & say "Buy BIT".
-If it is Market News -> Use Search Tool & Reply.
-If it is Panic -> Empathize.
-If it is Unknown/Random/Spam -> shouldReply: false.
+Task:
+1. Analyze if THIS message needs a reply.
+2. Detect SCAM/SPAM -> Mock + Tag @DecentralizedJM @babaearn23.
+3. Detect TROLLING -> Ignore or roast once.
+4. Detect ANGER -> De-escalate (English).
+5. ENSURE VARIETY in vocabulary.
 
-Output JSON with the following structure:
-{
-  "shouldReply": boolean,
-  "reasoning": string,
-  "response": string | null
-}
-Ensure the JSON is valid.
+Output JSON matching the schema.
 `
             }
           ]
@@ -128,37 +212,64 @@ Ensure the JSON is valid.
       ],
       config: {
         systemInstruction: systemInstruction,
-        tools: [{ googleSearch: {} }], // Enable Search for Market Analysis
-        temperature: 0.3, // Low temperature for high precision/IQ
-        // responseMimeType and responseSchema are not supported when using googleSearch
+        temperature: 0.8, // Higher for creativity/variety
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            shouldReply: { 
+              type: Type.BOOLEAN, 
+              description: "True if the bot needs to intervene." 
+            },
+            reasoning: { 
+              type: Type.STRING, 
+              description: "Why did you reply? (e.g. 'Scammer detected', 'Angry user', 'Troll ignored')" 
+            },
+            response: { 
+              type: Type.STRING, 
+              description: "The reply text. Null if shouldReply is false." 
+            }
+          },
+          required: ["shouldReply", "reasoning"]
+        }
       }
     });
 
-    let text = response.text || "{}";
-    // Remove markdown code blocks if present
-    text = text.replace(/```json|```/g, '').trim();
+    // 11. Parse structured response
+    const result = JSON.parse(response.text || "{}");
     
-    let result;
-    try {
-      result = JSON.parse(text);
-    } catch (e) {
-      console.warn("Failed to parse JSON from Gemini:", text);
-      // Fallback if parsing fails
-      result = {
-        shouldReply: true,
-        response: text,
-        reasoning: "Failed to parse JSON, assuming direct response."
-      };
-    }
-    
-    return {
+    const decision: BotDecision = {
       shouldReply: result.shouldReply ?? false,
       response: result.response || null,
       reasoning: result.reasoning || "No reasoning provided."
     };
 
-  } catch (error) {
-    console.error("Gemini Logic Error:", error);
-    return { shouldReply: false, response: null, reasoning: "Error in AI processing" };
+    // 12. Increment counter if bot decided to reply
+    if (decision.shouldReply) {
+      dailyResponseCount++;
+      console.log(`💬 [Reply ${dailyResponseCount}/${DAILY_RESPONSE_LIMIT}] ${decision.reasoning}`);
+      console.log(`📝 Response: ${decision.response}`);
+    } else {
+      console.log(`🤐 [Silent] ${decision.reasoning}`);
+    }
+
+    return decision;
+
+  } catch (error: any) {
+    console.error("❌ [Gemini Logic Error]:", error.message || error);
+    return { 
+      shouldReply: false, 
+      response: null, 
+      reasoning: "Error in AI processing" 
+    };
   }
 };
+
+// Export daily stats for /stats command
+export const getDailyStats = () => ({
+  responsesToday: dailyResponseCount,
+  limit: DAILY_RESPONSE_LIMIT,
+  remaining: DAILY_RESPONSE_LIMIT - dailyResponseCount,
+  lastReset: lastResetDate,
+  model: "gemini-3-pro-preview"
+});
