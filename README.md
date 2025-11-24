@@ -1,6 +1,6 @@
 # Mudrex Telegram Intern Bot 🤖
 
-AI-powered Telegram community assistant for Mudrex using **Gemini 3.0 Pro
+AI-powered Telegram community assistant for Mudrex using Gemini 3.0 Pro
 ## 🚀 Features
 
 ✅ **Ultra-Smart Spam Prevention** - Only responds when genuinely needed  
