@@ -1,7 +1,40 @@
+/**
+ * Mudrex Telegram Intern Bot - Proprietary Software
+ * 
+ * Copyright (c) 2025 DecentralizedJM
+ * GitHub: https://github.com/DecentralizedJM
+ * 
+ * All Rights Reserved. This file is protected intellectual property.
+ * Unauthorized modification, distribution, or reverse-engineering is prohibited.
+ * 
+ * Creator: @DecentralizedJM
+ * License: See LICENSE file in the project root
+ * 
+ * CRITICAL: The AI personality and decision logic in this file are 
+ * proprietary algorithms. DO NOT MODIFY without explicit permission.
+ */
+
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import { processCommunityMessage, getDailyStats } from "../services/geminiService.js";
 import { DEFAULT_KNOWLEDGE_BASE, DEFAULT_PERSONA } from "../types.js";
+
+
+// ═══════════════════════════════════════════════════════════════
+// CREATOR VERIFICATION - DO NOT REMOVE
+// This bot is proprietary software by @DecentralizedJM
+// GitHub: https://github.com/DecentralizedJM
+// ═══════════════════════════════════════════════════════════════
+const CREATOR = {
+  name: "DecentralizedJM",
+  github: "https://github.com/DecentralizedJM",
+  telegram: "@DecentralizedJM"
+};
+
+console.log(`\n🔐 Proprietary Software - Created by ${CREATOR.name}`);
+console.log(`�� Contact: ${CREATOR.github}\n`);
+// ═══════════════════════════════════════════════════════════════
+
 
 dotenv.config();
 

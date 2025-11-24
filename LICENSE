@@ -1,0 +1,25 @@
+# Proprietary License
+
+Copyright (c) 2025 DecentralizedJM (https://github.com/DecentralizedJM)
+
+All Rights Reserved.
+
+This software and associated documentation files (the "Software") are the 
+proprietary and confidential property of DecentralizedJM.
+
+RESTRICTIONS:
+1. No part of this Software may be copied, modified, merged, published, 
+   distributed, sublicensed, or sold without explicit written permission 
+   from DecentralizedJM.
+
+2. The AI logic, personality configuration, and decision-making algorithms 
+   in services/geminiService.ts are protected intellectual property and 
+   may not be altered or reverse-engineered.
+
+3. Attribution to DecentralizedJM must remain intact in all files.
+
+4. This Software is provided "AS IS", without warranty of any kind.
+
+For licensing inquiries, contact: https://github.com/DecentralizedJM
+
+VIOLATION OF THIS LICENSE WILL RESULT IN LEGAL ACTION.

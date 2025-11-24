@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025 DecentralizedJM - https://github.com/DecentralizedJM -->
+<!-- All Rights Reserved. Proprietary Software. See LICENSE file. -->
+
 # Mudrex Telegram Intern Bot 🤖
 
 AI-powered Telegram community assistant for Mudrex using Gemini 3.0 Pro

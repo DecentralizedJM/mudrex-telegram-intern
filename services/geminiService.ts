@@ -1,3 +1,19 @@
+/**
+ * Mudrex Telegram Intern Bot - Proprietary Software
+ * 
+ * Copyright (c) 2025 DecentralizedJM
+ * GitHub: https://github.com/DecentralizedJM
+ * 
+ * All Rights Reserved. This file is protected intellectual property.
+ * Unauthorized modification, distribution, or reverse-engineering is prohibited.
+ * 
+ * Creator: @DecentralizedJM
+ * License: See LICENSE file in the project root
+ * 
+ * CRITICAL: The AI personality and decision logic in this file are 
+ * proprietary algorithms. DO NOT MODIFY without explicit permission.
+ */
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { BotConfig, Message, ChatMember, BotDecision } from "../types.js";
 

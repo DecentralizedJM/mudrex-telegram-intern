@@ -1,26 +1,38 @@
 {
   "name": "mudrex-telegram-intern-bot",
   "version": "2.0.0",
-  "description": "AI-powered Telegram bot for Mudrex community with Gemini 2.0 Flash",
-  "type": "module",
-  "main": "dist/bot/index.js",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/bot/index.js",
-    "dev": "tsc && node dist/bot/index.js",
-    "bot": "npm run dev"
+  "description": "Proprietary Telegram bot for Mudrex community management with Gemini AI",
+  "author": "DecentralizedJM (https://github.com/DecentralizedJM)",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DecentralizedJM/mudrex-telegram-intern.git"
   },
-  "keywords": ["telegram", "bot", "gemini", "mudrex", "crypto", "ai"],
-  "author": "@DecentralizedJM",
-  "license": "MIT",
+  "scripts": {
+    "bot": "npm run dev",
+    "dev": "tsc && node dist/bot/index.js",
+    "build": "tsc",
+    "start": "node dist/bot/index.js"
+  },
   "dependencies": {
     "@google/genai": "^0.2.0",
     "dotenv": "^16.4.0",
     "node-telegram-bot-api": "^0.66.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "@types/node-telegram-bot-api": "^0.64.0",
-    "typescript": "^5.5.3"
-  }
+    "@types/node": "^22.5.5",
+    "@types/node-telegram-bot-api": "^0.64.7",
+    "typescript": "^5.6.2"
+  },
+  "copyright": "Copyright (c) 2025 DecentralizedJM. All Rights Reserved.",
+  "keywords": [
+    "telegram",
+    "bot",
+    "gemini",
+    "ai",
+    "mudrex",
+    "crypto",
+    "community-management"
+  ]
 }
