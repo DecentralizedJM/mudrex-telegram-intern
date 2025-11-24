@@ -1,7 +1,6 @@
 # Mudrex Telegram Intern Bot 🤖
 
-AI-powered Telegram community assistant for Mudrex using **Gemini 2.0 Flash Thinking Experimental (Dec 2024)**.
-
+AI-powered Telegram community assistant for Mudrex using **Gemini 3.0 Pro
 ## 🚀 Features
 
 ✅ **Ultra-Smart Spam Prevention** - Only responds when genuinely needed  
@@ -121,7 +120,7 @@ const DAILY_RESPONSE_LIMIT = 50; // Change this
 ## 📊 Tech Stack
 
 - **Runtime**: Node.js with TypeScript
-- **AI Model**: Gemini 2.0 Flash Thinking Experimental (Dec 2024)
+- **AI Model**: Gemini 3 Pro
 - **Bot Framework**: node-telegram-bot-api
 - **Temperature**: 0.2 (precise, low hallucination)
 - **Max Tokens**: 500 (concise responses)
